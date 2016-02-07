@@ -11,6 +11,8 @@ public class Test {
     public static void main(String[] args) {
         try {
             scanpr.ScanClasses();
+            LazyInvoke lazyInvoke=new LazyInvoke(scanpr.getInitMethods(),scanpr.getMap());
+            lazyInvoke.ScanMap();
         } catch (IllegalAccessException e) {
             log.log(Level.ERROR,"Error "+e.getMessage()+ " ",e);
         } catch (InstantiationException e) {

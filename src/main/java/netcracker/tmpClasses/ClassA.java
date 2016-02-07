@@ -12,7 +12,7 @@ public class ClassA {
     private static final Logger log=Logger.getLogger(ClassA.class.getName());
 
     @Initialize(lazy=false)
-    public void FirstMethod()
+    private void FirstMethod()
     {
         log.log(Level.INFO,"First method with annotation without lazy parameter called");
     }

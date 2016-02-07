@@ -18,35 +18,48 @@ import org.reflections.util.FilterBuilder;
  * Created by Denis on 01.02.2016.
  */
 public class ScanProject {
-    private static final Logger log=Logger.getLogger(Test.class.getName());
+    private static final Logger log = Logger.getLogger(Test.class.getName());
+
+    public List<String> getInitMethods() {
+        return initMethods;
+    }
+
+    public void setInitMethods(List<String> initMethods) {
+        this.initMethods = initMethods;
+    }
+
+    private List<String> initMethods;
+
+    public Map getMap() {
+        return map;
+    }
+
+    public void setMap(Map map) {
+        this.map = map;
+    }
+
+    private Map map;
     public void ScanClasses() throws IllegalAccessException, InstantiationException, InvocationTargetException {
-        Set<Class<?>> classes=getClasses();
-        HashMap<String,Method> testmap=new HashMap<>();
-        for(Class cl:classes){
-            Object result=cl.newInstance();
-            if(cl.isAnnotationPresent(Component.class)){
-                Method[] methods=cl.getMethods();
-                for(int j=0;j<methods.length;j++){
-                    if(methods[j].isAnnotationPresent(Initialize.class))
-                    {
-                        Initialize classann=methods[j].getAnnotation(Initialize.class);
-                        if(!classann.lazy())
+        Set<Class<?>> classes = getClasses();
+        map = new HashMap<String, Object>();
+        initMethods=new ArrayList<>();
+        for (Class cl : classes) {
+            if (cl.isAnnotationPresent(Component.class)) {
+                Object result = cl.newInstance();
+                map.put(result.getClass().getSimpleName(), result);
+                Method[] methods = cl.getDeclaredMethods();
+                for (int j = 0; j < methods.length; j++) {
+                    Initialize initialize = methods[j].getAnnotation(Initialize.class);
+                    if (initialize != null) {
+                        if (!initialize.lazy()) {
+                            methods[j].setAccessible(true);
                             methods[j].invoke(result);
-                        testmap.put(cl.getSimpleName()+" "+methods[j].getName(),methods[j]);
+                            initMethods.add(result.getClass().getName()+methods[j].getName());
+                        }
                     }
                 }
             }
         }
-        ClassA classA=new ClassA();
-        Initialize methodinit1=testmap.get("ClassA FirstMethod").getAnnotation(Initialize.class);
-        Initialize methodinit2=testmap.get("ClassA SecondMethod").getAnnotation(Initialize.class);
-        Initialize methodinit3=testmap.get("ClassA ThirdMethod").getAnnotation(Initialize.class);
-        if(methodinit1.lazy())
-            testmap.get("ClassA FirstMethod").invoke(classA);
-        if(methodinit2.lazy())
-            testmap.get("ClassA SecondMethod").invoke(classA);
-        if(methodinit3.lazy())
-            testmap.get("ClassA ThirdMethod").invoke(classA);
     }
 
     private Set<Class<?>> getClasses() {
