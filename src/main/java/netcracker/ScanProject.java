@@ -20,46 +20,56 @@ import org.reflections.util.FilterBuilder;
 public class ScanProject {
     private static final Logger log = Logger.getLogger(Test.class.getName());
 
-    public List<String> getInitMethods() {
-        return initMethods;
+    public List<String> getInitInstance() {
+        return initInstance;
     }
 
-    public void setInitMethods(List<String> initMethods) {
-        this.initMethods = initMethods;
-    }
-
-    private List<String> initMethods;
-
-    public Map getMap() {
-        return map;
-    }
-
-    public void setMap(Map map) {
-        this.map = map;
+    public void setInitInstance(List<String> initInstance) {
+        this.initInstance = initInstance;
     }
 
     private Map map;
-    public void ScanClasses() throws IllegalAccessException, InstantiationException, InvocationTargetException {
+
+    public ScanProject(){
+        map=new HashMap<String,Object>();
+    }
+
+    private List<String> initInstance;
+    public Map ScanClasses() throws IllegalAccessException, InstantiationException, InvocationTargetException {
         Set<Class<?>> classes = getClasses();
-        map = new HashMap<String, Object>();
-        initMethods=new ArrayList<>();
+        initInstance=new ArrayList<>();
         for (Class cl : classes) {
             if (cl.isAnnotationPresent(Component.class)) {
                 Object result = cl.newInstance();
-                map.put(result.getClass().getSimpleName(), result);
                 Method[] methods = cl.getDeclaredMethods();
                 for (int j = 0; j < methods.length; j++) {
-                    Initialize initialize = methods[j].getAnnotation(Initialize.class);
-                    if (initialize != null) {
-                        if (!initialize.lazy()) {
+                    if(methods[j].isAnnotationPresent(Initialize.class)) {
+                        if (!methods[j].getAnnotation(Initialize.class).lazy()) {
                             methods[j].setAccessible(true);
                             methods[j].invoke(result);
-                            initMethods.add(result.getClass().getName()+methods[j].getName());
+                            initInstance.add(result.getClass().getName()+methods[j].getName());
+                        }
+                    }
+                }
+                map.put(result.getClass().getName(), result);
+            }
+        }
+        return map;
+    }
+
+    public void ScanMap(Object instance) throws InvocationTargetException, IllegalAccessException {
+        Method[] methods=instance.getClass().getDeclaredMethods();
+            for(int i=0;i<methods.length;i++) {
+                if (methods[i].isAnnotationPresent(Initialize.class)) {
+                    if (methods[i].getAnnotation(Initialize.class).lazy()) {
+                        if (!initInstance.contains(instance.getClass().getName() + methods[i].getName())) {
+                            methods[i].setAccessible(true);
+                            methods[i].invoke(instance);
+                            initInstance.add(instance.getClass().getName() + methods[i].getName());
                         }
                     }
                 }
             }
-        }
     }
 
     private Set<Class<?>> getClasses() {
